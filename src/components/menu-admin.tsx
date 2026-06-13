@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { MenuPointSelector } from "@/components/menu-point-selector";
 import { PaneOptionSelector } from "@/components/pane-option-selector";
 import { PracticeMenuPane } from "@/components/practice-menu-pane";
+import { ScreenNav } from "@/components/screen-nav";
 import { Button } from "@/components/ui/button";
 import { VideoEmbed } from "@/components/video-embed";
 import { saveMenuAction } from "@/lib/menu-actions";
@@ -335,12 +335,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
             種目・目的・メニュー・ポイント・動画の追加と削除ができます。
           </p>
         </div>
-        <Link
-          href="/"
-          className="inline-flex h-8 items-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
-        >
-          閲覧画面へ
-        </Link>
+        <ScreenNav current="admin" />
       </div>
 
       {(loadFailed || statusMessage || errorMessage || isPending) && (
