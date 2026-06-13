@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
+import { MenuPointSelector } from "@/components/menu-point-selector";
 import { PaneOptionSelector } from "@/components/pane-option-selector";
 import { PracticeMenuPane } from "@/components/practice-menu-pane";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
   setVideoUrl,
   updateSessionMenuLabel,
 } from "@/lib/menu-mutations";
-import { getMenuLabel, getPurposesForEvent } from "@/lib/menu-utils";
+import { getPurposesForEvent } from "@/lib/menu-utils";
 import type { PracticeMenuData, PracticeSession } from "@/types/menu";
 
 type MenuAdminProps = {
@@ -49,7 +50,12 @@ function getInitialSelection(data: PracticeMenuData) {
   const purpose = purposes[0] ?? "";
   const session = getSessionsForSelection(data.sessions, event, purpose)[0];
 
-  return { event, purpose, sessionId: session?.id ?? "" };
+  return {
+    event,
+    purpose,
+    sessionId: session?.id ?? "",
+    expandedSessionId: session?.id ?? "",
+  };
 }
 
 const inputClassName =
@@ -61,6 +67,9 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
   const [selectedEvent, setSelectedEvent] = useState(initial.event);
   const [selectedPurpose, setSelectedPurpose] = useState(initial.purpose);
   const [selectedSessionId, setSelectedSessionId] = useState(initial.sessionId);
+  const [expandedSessionId, setExpandedSessionId] = useState(
+    initial.expandedSessionId
+  );
   const [newEvent, setNewEvent] = useState("");
   const [newPurpose, setNewPurpose] = useState("");
   const [newMenuItem, setNewMenuItem] = useState("");
@@ -133,6 +142,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
     setSelectedEvent(event);
     setSelectedPurpose(nextPurpose);
     setSelectedSessionId(nextSessionId);
+    setExpandedSessionId(nextSessionId);
 
     if (nextSessionId) {
       const session = nextData.sessions.find((item) => item.id === nextSessionId);
@@ -152,13 +162,21 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
       selectedEvent,
       purpose
     );
+    const nextSessionId = nextSessions[0]?.id ?? "";
     setSelectedPurpose(purpose);
-    setSelectedSessionId(nextSessions[0]?.id ?? "");
+    setSelectedSessionId(nextSessionId);
+    setExpandedSessionId(nextSessionId);
     setVideoUrlInput(nextSessions[0]?.videoUrl ?? "");
   };
 
   const handleMenuSelect = (sessionId: string) => {
+    if (selectedSessionId === sessionId && expandedSessionId === sessionId) {
+      setExpandedSessionId("");
+      return;
+    }
+
     setSelectedSessionId(sessionId);
+    setExpandedSessionId(sessionId);
     const session = data.sessions.find((item) => item.id === sessionId);
     setVideoUrlInput(session?.videoUrl ?? "");
   };
@@ -436,64 +454,85 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
 
         <PracticeMenuPane title="メニューとポイント">
           <div className="space-y-6">
-            {selectedEvent && selectedPurpose ? (
-              <section className="space-y-2 border-b pb-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  メニュー一覧
-                </h3>
-                {menuSessions.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {menuSessions.map((session) => (
-                      <div key={session.id} className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleMenuSelect(session.id)}
-                          className={
-                            selectedSession?.id === session.id
-                              ? "min-w-0 flex-1 rounded-lg bg-primary px-3 py-2 text-left text-sm text-primary-foreground"
-                              : "min-w-0 flex-1 rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted"
-                          }
-                        >
-                          {getMenuLabel(session)}
-                        </button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          disabled={isPending}
-                          onClick={() => handleDeleteSession(session.id)}
-                        >
-                          削除
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    この種目・目的のメニューはまだありません。
-                  </p>
-                )}
-                <div className="flex gap-2 pt-2">
-                  <input
-                    type="text"
-                    value={newSessionLabel}
-                    onChange={(event) => setNewSessionLabel(event.target.value)}
-                    placeholder="新しいメニュー名"
-                    className={inputClassName}
-                  />
-                  <Button
-                    type="button"
-                    disabled={isPending}
-                    onClick={handleAddSession}
-                  >
-                    追加
-                  </Button>
-                </div>
-              </section>
-            ) : (
+            {!selectedEvent || !selectedPurpose ? (
               <p className="text-sm text-muted-foreground">
                 先に種目と目的を選択してください。
               </p>
+            ) : menuSessions.length > 0 ? (
+              <MenuPointSelector
+                sessions={menuSessions}
+                selectedId={selectedSession?.id ?? ""}
+                expandedId={expandedSessionId}
+                onSelect={handleMenuSelect}
+                renderSessionActions={(session) => (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => handleDeleteSession(session.id)}
+                  >
+                    削除
+                  </Button>
+                )}
+                renderPointItem={(_session, point, index) => (
+                  <div className="flex items-start gap-2">
+                    <span className="min-w-0 flex-1 leading-relaxed">
+                      ▶ {point}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="xs"
+                      disabled={isPending}
+                      onClick={() => handleDeletePoint(index)}
+                    >
+                      削除
+                    </Button>
+                  </div>
+                )}
+                renderAfterPoints={() => (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      value={newPoint}
+                      onChange={(event) => setNewPoint(event.target.value)}
+                      placeholder="ポイントを追加"
+                      className={inputClassName}
+                    />
+                    <Button
+                      type="button"
+                      disabled={isPending || !newPoint.trim()}
+                      onClick={handleAddPoint}
+                    >
+                      追加
+                    </Button>
+                  </div>
+                )}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                この種目・目的のメニューはまだありません。
+              </p>
+            )}
+
+            {selectedEvent && selectedPurpose && (
+              <div className="flex gap-2 border-t pt-4">
+                <input
+                  type="text"
+                  value={newSessionLabel}
+                  onChange={(event) => setNewSessionLabel(event.target.value)}
+                  placeholder="新しいメニュー名"
+                  className={inputClassName}
+                />
+                <Button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleAddSession}
+                >
+                  追加
+                </Button>
+              </div>
             )}
 
             {selectedSession ? (
@@ -552,49 +591,6 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
                       type="button"
                       disabled={isPending || !newMenuItem.trim()}
                       onClick={handleAddMenuItem}
-                    >
-                      追加
-                    </Button>
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                    ポイント
-                  </h3>
-                  <ul className="space-y-2">
-                    {selectedSession.menu.points.map((point, index) => (
-                      <li
-                        key={`${selectedSession.id}-point-${index}`}
-                        className="flex items-start gap-2"
-                      >
-                        <span className="min-w-0 flex-1 leading-relaxed">
-                          ▶ {point}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="xs"
-                          disabled={isPending}
-                          onClick={() => handleDeletePoint(index)}
-                        >
-                          削除
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      value={newPoint}
-                      onChange={(event) => setNewPoint(event.target.value)}
-                      placeholder="ポイントを追加"
-                      className={inputClassName}
-                    />
-                    <Button
-                      type="button"
-                      disabled={isPending || !newPoint.trim()}
-                      onClick={handleAddPoint}
                     >
                       追加
                     </Button>

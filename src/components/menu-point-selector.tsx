@@ -10,6 +10,13 @@ type MenuPointSelectorProps = {
   selectedId: string;
   expandedId: string;
   onSelect: (sessionId: string) => void;
+  renderSessionActions?: (session: PracticeSession) => React.ReactNode;
+  renderPointItem?: (
+    session: PracticeSession,
+    point: string,
+    index: number
+  ) => React.ReactNode;
+  renderAfterPoints?: (session: PracticeSession) => React.ReactNode;
 };
 
 export function MenuPointSelector({
@@ -17,6 +24,9 @@ export function MenuPointSelector({
   selectedId,
   expandedId,
   onSelect,
+  renderSessionActions,
+  renderPointItem,
+  renderAfterPoints,
 }: MenuPointSelectorProps) {
   return (
     <div className="flex flex-col gap-2">
@@ -26,17 +36,20 @@ export function MenuPointSelector({
 
         return (
           <div key={session.id}>
-            <Button
-              type="button"
-              variant={isSelected ? "default" : "outline"}
-              className={cn(
-                "h-auto min-h-9 w-full justify-start px-3 py-2 text-left whitespace-normal",
-                isSelected && "ring-2 ring-ring/30"
-              )}
-              onClick={() => onSelect(session.id)}
-            >
-              {getMenuLabel(session)}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={isSelected ? "default" : "outline"}
+                className={cn(
+                  "h-auto min-h-9 min-w-0 flex-1 justify-start px-3 py-2 text-left whitespace-normal",
+                  isSelected && "ring-2 ring-ring/30"
+                )}
+                onClick={() => onSelect(session.id)}
+              >
+                {getMenuLabel(session)}
+              </Button>
+              {renderSessionActions?.(session)}
+            </div>
 
             {isExpanded && (
               <div className="mt-2 border-l-2 border-primary/30 pl-3">
@@ -44,12 +57,17 @@ export function MenuPointSelector({
                   ポイント
                 </h4>
                 <ul className="space-y-2 text-sm">
-                  {session.menu.points.map((point) => (
-                    <li key={point} className="leading-relaxed">
-                      ▶ {point}
+                  {session.menu.points.map((point, index) => (
+                    <li key={`${session.id}-point-${index}`}>
+                      {renderPointItem ? (
+                        renderPointItem(session, point, index)
+                      ) : (
+                        <span className="leading-relaxed">▶ {point}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
+                {renderAfterPoints?.(session)}
               </div>
             )}
           </div>
