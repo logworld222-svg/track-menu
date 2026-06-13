@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { MenuPointSelector } from "@/components/menu-point-selector";
@@ -114,16 +113,7 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
   };
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="mb-4 flex justify-end">
-        <Link
-          href="/admin"
-          className="inline-flex h-8 items-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
-        >
-          管理画面
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:h-[calc(100vh-5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.25fr)] lg:grid-rows-1 lg:overflow-hidden">
+    <div className="grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.25fr)] lg:grid-rows-1 lg:overflow-hidden">
       <PracticeMenuPane title="種目">
         <PaneOptionSelector
           options={data.events}
@@ -164,7 +154,6 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
       <PracticeMenuPane title="動画">
         <VideoEmbed videoUrl={selectedSession?.videoUrl} />
       </PracticeMenuPane>
-      </div>
     </div>
   );
 }
