@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { MenuPointSelector } from "@/components/menu-point-selector";
 import { PaneOptionSelector } from "@/components/pane-option-selector";
 import { PracticeMenuPane } from "@/components/practice-menu-pane";
+import { ADMIN_NAV_STORAGE_KEY, ScreenNav } from "@/components/screen-nav";
 import { VideoEmbed } from "@/components/video-embed";
 import { getPurposesForEvent } from "@/lib/menu-utils";
+import { cn } from "@/lib/utils";
 import type { PracticeMenuData, PracticeSession } from "@/types/menu";
 
 type PracticeMenuProps = {
@@ -48,6 +50,11 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
   const [expandedSessionIds, setExpandedSessionIds] = useState(
     initial.expandedSessionIds
   );
+  const [showAdminNav, setShowAdminNav] = useState(false);
+
+  useEffect(() => {
+    setShowAdminNav(sessionStorage.getItem(ADMIN_NAV_STORAGE_KEY) === "1");
+  }, []);
 
   const purposes = useMemo(
     () => getPurposesForEvent(data, selectedEvent),
@@ -113,7 +120,18 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
   };
 
   return (
-    <div className="grid min-h-screen grid-cols-1 gap-4 p-4 lg:h-screen lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.25fr)] lg:grid-rows-1 lg:overflow-hidden">
+    <div className="min-h-screen p-4">
+      {showAdminNav && (
+        <div className="mb-4 flex justify-end">
+          <ScreenNav current="viewer" />
+        </div>
+      )}
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1.25fr)] lg:grid-rows-1 lg:overflow-hidden",
+          showAdminNav ? "lg:h-[calc(100vh-5rem)]" : "min-h-[calc(100vh-2rem)] lg:h-[calc(100vh-2rem)]"
+        )}
+      >
       <PracticeMenuPane title="種目">
         <PaneOptionSelector
           options={data.events}
@@ -154,6 +172,7 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
       <PracticeMenuPane title="動画">
         <VideoEmbed videoUrl={selectedSession?.videoUrl} />
       </PracticeMenuPane>
+      </div>
     </div>
   );
 }
