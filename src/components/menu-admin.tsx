@@ -342,8 +342,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
         <div className="mb-4 space-y-2">
           {loadFailed && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              menu.json を読み込めなかったため、初期データで表示しています。保存すると
-              menu.json が上書きされます。
+              メニューデータを読み込めなかったため、初期データで表示しています。保存するとクラウド上のデータが更新されます。
             </p>
           )}
           {isPending && (

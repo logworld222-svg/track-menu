@@ -2,6 +2,11 @@ import { readFile, writeFile } from "fs/promises";
 import path from "path";
 
 import {
+  isBlobStorageEnabled,
+  readMenuBlob,
+  writeMenuBlob,
+} from "@/lib/menu-blob";
+import {
   getMenuFromMicroCMS,
   isMicroCMSEnabled,
   saveMenuToMicroCMS,
@@ -81,6 +86,23 @@ function isPracticeMenuData(value: unknown): value is PracticeMenuData {
 async function getMenuFromJson(): Promise<PracticeMenuData | null> {
   try {
     const content = await readFile(MENU_JSON_PATH, "utf-8");
+    return parsePracticeMenuData(content);
+  } catch {
+    return null;
+  }
+}
+
+async function getMenuFromBlob(): Promise<PracticeMenuData | null> {
+  const content = await readMenuBlob();
+  if (!content) {
+    return null;
+  }
+
+  return parsePracticeMenuData(content);
+}
+
+function parsePracticeMenuData(content: string): PracticeMenuData | null {
+  try {
     const parsed: unknown = JSON.parse(content);
 
     if (!isPracticeMenuData(parsed)) {
@@ -101,20 +123,38 @@ export async function getMenu(): Promise<PracticeMenuData | null> {
     }
   }
 
+  if (isBlobStorageEnabled()) {
+    const menuFromBlob = await getMenuFromBlob();
+    if (menuFromBlob) {
+      return menuFromBlob;
+    }
+  }
+
   return getMenuFromJson();
 }
 
 async function saveMenuToJson(data: PracticeMenuData): Promise<SaveMenuResult> {
+  if (process.env.VERCEL) {
+    return {
+      ok: false,
+      error:
+        "本番環境では menu.json に直接保存できません。クラウドストレージの設定を確認してください。",
+    };
+  }
+
   try {
     await writeFile(MENU_JSON_PATH, `${JSON.stringify(data, null, 2)}\n`, "utf-8");
     return { ok: true };
   } catch {
     return {
       ok: false,
-      error:
-        "menu.json への保存に失敗しました。ローカル環境で実行しているか確認してください。",
+      error: "menu.json への保存に失敗しました。",
     };
   }
+}
+
+async function saveMenuToBlob(data: PracticeMenuData): Promise<SaveMenuResult> {
+  return writeMenuBlob(`${JSON.stringify(data, null, 2)}\n`);
 }
 
 export async function saveMenu(data: PracticeMenuData): Promise<SaveMenuResult> {
@@ -124,6 +164,13 @@ export async function saveMenu(data: PracticeMenuData): Promise<SaveMenuResult> 
 
   if (isMicroCMSEnabled()) {
     const result = await saveMenuToMicroCMS(data);
+    if (result.ok) {
+      return result;
+    }
+  }
+
+  if (isBlobStorageEnabled()) {
+    const result = await saveMenuToBlob(data);
     if (result.ok) {
       return result;
     }
