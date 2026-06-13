@@ -1,4 +1,4 @@
-import { head, put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 
 const MENU_BLOB_PATH = "data/menu.json";
 
@@ -27,14 +27,17 @@ export async function readMenuBlob(): Promise<string | null> {
 
   try {
     const blobOptions = getBlobOptions();
-    const metadata = await head(MENU_BLOB_PATH, blobOptions);
-    const response = await fetch(metadata.url);
+    const result = await get(MENU_BLOB_PATH, {
+      access: "private",
+      useCache: false,
+      ...blobOptions,
+    });
 
-    if (!response.ok) {
+    if (!result || result.statusCode !== 200 || !result.stream) {
       return null;
     }
 
-    return response.text();
+    return await new Response(result.stream).text();
   } catch {
     return null;
   }

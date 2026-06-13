@@ -116,17 +116,17 @@ function parsePracticeMenuData(content: string): PracticeMenuData | null {
 }
 
 export async function getMenu(): Promise<PracticeMenuData | null> {
-  if (isMicroCMSEnabled()) {
-    const menuFromMicroCMS = await getMenuFromMicroCMS();
-    if (menuFromMicroCMS) {
-      return menuFromMicroCMS;
-    }
-  }
-
   if (isBlobStorageEnabled()) {
     const menuFromBlob = await getMenuFromBlob();
     if (menuFromBlob) {
       return menuFromBlob;
+    }
+  }
+
+  if (isMicroCMSEnabled()) {
+    const menuFromMicroCMS = await getMenuFromMicroCMS();
+    if (menuFromMicroCMS) {
+      return menuFromMicroCMS;
     }
   }
 
