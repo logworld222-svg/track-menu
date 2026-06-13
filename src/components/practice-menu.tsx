@@ -31,7 +31,12 @@ function getInitialSelection(data: PracticeMenuData) {
   const purpose = purposes[0] ?? "";
   const session = getSessionsForSelection(data.sessions, event, purpose)[0];
 
-  return { event, purpose, sessionId: session?.id ?? "", expandedSessionId: session?.id ?? "" };
+  return {
+    event,
+    purpose,
+    sessionId: session?.id ?? "",
+    expandedSessionIds: session?.id ? [session.id] : [],
+  };
 }
 
 export function PracticeMenu({ data }: PracticeMenuProps) {
@@ -40,8 +45,8 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
   const [selectedEvent, setSelectedEvent] = useState(initial.event);
   const [selectedPurpose, setSelectedPurpose] = useState(initial.purpose);
   const [selectedSessionId, setSelectedSessionId] = useState(initial.sessionId);
-  const [expandedSessionId, setExpandedSessionId] = useState(
-    initial.expandedSessionId
+  const [expandedSessionIds, setExpandedSessionIds] = useState(
+    initial.expandedSessionIds
   );
 
   const purposes = useMemo(
@@ -75,7 +80,7 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
     setSelectedEvent(event);
     setSelectedPurpose(nextPurpose);
     setSelectedSessionId(nextSession?.id ?? "");
-    setExpandedSessionId(nextSession?.id ?? "");
+    setExpandedSessionIds(nextSession?.id ? [nextSession.id] : []);
   };
 
   const handlePurposeSelect = (purpose: string) => {
@@ -87,17 +92,24 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
 
     setSelectedPurpose(purpose);
     setSelectedSessionId(nextSession?.id ?? "");
-    setExpandedSessionId(nextSession?.id ?? "");
+    setExpandedSessionIds(nextSession?.id ? [nextSession.id] : []);
   };
 
   const handleMenuSelect = (sessionId: string) => {
-    if (selectedSessionId === sessionId && expandedSessionId === sessionId) {
-      setExpandedSessionId("");
+    if (
+      selectedSessionId === sessionId &&
+      expandedSessionIds.includes(sessionId)
+    ) {
+      setExpandedSessionIds((current) =>
+        current.filter((id) => id !== sessionId)
+      );
       return;
     }
 
     setSelectedSessionId(sessionId);
-    setExpandedSessionId(sessionId);
+    setExpandedSessionIds((current) =>
+      current.includes(sessionId) ? current : [...current, sessionId]
+    );
   };
 
   return (
@@ -129,7 +141,7 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
           <MenuPointSelector
             sessions={menuSessions}
             selectedId={selectedSession?.id ?? ""}
-            expandedId={expandedSessionId}
+            expandedIds={expandedSessionIds}
             onSelect={handleMenuSelect}
           />
         ) : (

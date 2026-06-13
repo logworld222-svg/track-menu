@@ -8,7 +8,7 @@ import type { PracticeSession } from "@/types/menu";
 type MenuPointSelectorProps = {
   sessions: PracticeSession[];
   selectedId: string;
-  expandedId: string;
+  expandedIds: string[];
   onSelect: (sessionId: string) => void;
   renderSessionActions?: (session: PracticeSession) => React.ReactNode;
   renderPointItem?: (
@@ -22,7 +22,7 @@ type MenuPointSelectorProps = {
 export function MenuPointSelector({
   sessions,
   selectedId,
-  expandedId,
+  expandedIds,
   onSelect,
   renderSessionActions,
   renderPointItem,
@@ -32,7 +32,7 @@ export function MenuPointSelector({
     <div className="flex flex-col gap-2">
       {sessions.map((session) => {
         const isSelected = selectedId === session.id;
-        const isExpanded = expandedId === session.id;
+        const isExpanded = expandedIds.includes(session.id);
 
         return (
           <div key={session.id}>

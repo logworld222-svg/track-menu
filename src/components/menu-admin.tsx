@@ -54,7 +54,7 @@ function getInitialSelection(data: PracticeMenuData) {
     event,
     purpose,
     sessionId: session?.id ?? "",
-    expandedSessionId: session?.id ?? "",
+    expandedSessionIds: session?.id ? [session.id] : [],
   };
 }
 
@@ -67,8 +67,8 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
   const [selectedEvent, setSelectedEvent] = useState(initial.event);
   const [selectedPurpose, setSelectedPurpose] = useState(initial.purpose);
   const [selectedSessionId, setSelectedSessionId] = useState(initial.sessionId);
-  const [expandedSessionId, setExpandedSessionId] = useState(
-    initial.expandedSessionId
+  const [expandedSessionIds, setExpandedSessionIds] = useState(
+    initial.expandedSessionIds
   );
   const [newEvent, setNewEvent] = useState("");
   const [newPurpose, setNewPurpose] = useState("");
@@ -142,7 +142,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
     setSelectedEvent(event);
     setSelectedPurpose(nextPurpose);
     setSelectedSessionId(nextSessionId);
-    setExpandedSessionId(nextSessionId);
+    setExpandedSessionIds(nextSessionId ? [nextSessionId] : []);
 
     if (nextSessionId) {
       const session = nextData.sessions.find((item) => item.id === nextSessionId);
@@ -165,18 +165,25 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
     const nextSessionId = nextSessions[0]?.id ?? "";
     setSelectedPurpose(purpose);
     setSelectedSessionId(nextSessionId);
-    setExpandedSessionId(nextSessionId);
+    setExpandedSessionIds(nextSessionId ? [nextSessionId] : []);
     setVideoUrlInput(nextSessions[0]?.videoUrl ?? "");
   };
 
   const handleMenuSelect = (sessionId: string) => {
-    if (selectedSessionId === sessionId && expandedSessionId === sessionId) {
-      setExpandedSessionId("");
+    if (
+      selectedSessionId === sessionId &&
+      expandedSessionIds.includes(sessionId)
+    ) {
+      setExpandedSessionIds((current) =>
+        current.filter((id) => id !== sessionId)
+      );
       return;
     }
 
     setSelectedSessionId(sessionId);
-    setExpandedSessionId(sessionId);
+    setExpandedSessionIds((current) =>
+      current.includes(sessionId) ? current : [...current, sessionId]
+    );
     const session = data.sessions.find((item) => item.id === sessionId);
     setVideoUrlInput(session?.videoUrl ?? "");
   };
@@ -288,10 +295,8 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
     persist(nextData, "ポイントを追加しました。");
   };
 
-  const handleDeletePoint = (index: number) => {
-    if (!selectedSession) return;
-
-    const nextData = deletePoint(data, selectedSession.id, index);
+  const handleDeletePoint = (sessionId: string, index: number) => {
+    const nextData = deletePoint(data, sessionId, index);
     persist(nextData, "ポイントを削除しました。");
   };
 
@@ -461,7 +466,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
               <MenuPointSelector
                 sessions={menuSessions}
                 selectedId={selectedSession?.id ?? ""}
-                expandedId={expandedSessionId}
+                expandedIds={expandedSessionIds}
                 onSelect={handleMenuSelect}
                 renderSessionActions={(session) => (
                   <Button
@@ -474,7 +479,7 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
                     削除
                   </Button>
                 )}
-                renderPointItem={(_session, point, index) => (
+                renderPointItem={(session, point, index) => (
                   <div className="flex items-start gap-2">
                     <span className="min-w-0 flex-1 leading-relaxed">
                       ▶ {point}
@@ -484,13 +489,14 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
                       variant="destructive"
                       size="xs"
                       disabled={isPending}
-                      onClick={() => handleDeletePoint(index)}
+                      onClick={() => handleDeletePoint(session.id, index)}
                     >
                       削除
                     </Button>
                   </div>
                 )}
-                renderAfterPoints={() => (
+                renderAfterPoints={(session) =>
+                  session.id === selectedSession?.id ? (
                   <div className="mt-3 flex gap-2">
                     <input
                       type="text"
@@ -507,7 +513,8 @@ export function MenuAdmin({ initialData, loadFailed = false }: MenuAdminProps) {
                       追加
                     </Button>
                   </div>
-                )}
+                  ) : null
+                }
               />
             ) : (
               <p className="text-sm text-muted-foreground">
