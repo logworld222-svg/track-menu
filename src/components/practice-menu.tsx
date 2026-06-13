@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 
+import { MenuPointSelector } from "@/components/menu-point-selector";
 import { PaneOptionSelector } from "@/components/pane-option-selector";
 import { PracticeMenuPane } from "@/components/practice-menu-pane";
 import { VideoEmbed } from "@/components/video-embed";
-import { getMenuLabel, getPurposesForEvent } from "@/lib/menu-utils";
+import { getPurposesForEvent } from "@/lib/menu-utils";
 import type { PracticeMenuData, PracticeSession } from "@/types/menu";
 
 type PracticeMenuProps = {
@@ -30,7 +31,7 @@ function getInitialSelection(data: PracticeMenuData) {
   const purpose = purposes[0] ?? "";
   const session = getSessionsForSelection(data.sessions, event, purpose)[0];
 
-  return { event, purpose, sessionId: session?.id ?? "" };
+  return { event, purpose, sessionId: session?.id ?? "", expandedSessionId: session?.id ?? "" };
 }
 
 export function PracticeMenu({ data }: PracticeMenuProps) {
@@ -39,6 +40,9 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
   const [selectedEvent, setSelectedEvent] = useState(initial.event);
   const [selectedPurpose, setSelectedPurpose] = useState(initial.purpose);
   const [selectedSessionId, setSelectedSessionId] = useState(initial.sessionId);
+  const [expandedSessionId, setExpandedSessionId] = useState(
+    initial.expandedSessionId
+  );
 
   const purposes = useMemo(
     () => getPurposesForEvent(data, selectedEvent),
@@ -71,6 +75,7 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
     setSelectedEvent(event);
     setSelectedPurpose(nextPurpose);
     setSelectedSessionId(nextSession?.id ?? "");
+    setExpandedSessionId(nextSession?.id ?? "");
   };
 
   const handlePurposeSelect = (purpose: string) => {
@@ -82,10 +87,17 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
 
     setSelectedPurpose(purpose);
     setSelectedSessionId(nextSession?.id ?? "");
+    setExpandedSessionId(nextSession?.id ?? "");
   };
 
   const handleMenuSelect = (sessionId: string) => {
+    if (selectedSessionId === sessionId && expandedSessionId === sessionId) {
+      setExpandedSessionId("");
+      return;
+    }
+
     setSelectedSessionId(sessionId);
+    setExpandedSessionId(sessionId);
   };
 
   return (
@@ -113,65 +125,18 @@ export function PracticeMenu({ data }: PracticeMenuProps) {
       </PracticeMenuPane>
 
       <PracticeMenuPane title="メニューとポイント">
-        <div className="space-y-6">
-          {menuSessions.length > 1 && (
-            <section>
-              <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                メニューを選択
-              </h3>
-              <div className="flex flex-col gap-2">
-                {menuSessions.map((session) => (
-                  <button
-                    key={session.id}
-                    type="button"
-                    onClick={() => handleMenuSelect(session.id)}
-                    className={
-                      selectedSession?.id === session.id
-                        ? "rounded-lg bg-primary px-3 py-2 text-left text-sm text-primary-foreground"
-                        : "rounded-lg border px-3 py-2 text-left text-sm hover:bg-muted"
-                    }
-                  >
-                    {getMenuLabel(session)}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {selectedSession ? (
-            <>
-              <section>
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                  メニュー
-                </h3>
-                <ol className="list-decimal space-y-2 pl-5">
-                  {selectedSession.menu.items.map((item) => (
-                    <li key={item} className="leading-relaxed">
-                      {item}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-
-              <section>
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                  ポイント
-                </h3>
-                <ul className="space-y-2">
-                  {selectedSession.menu.points.map((point) => (
-                    <li key={point} className="leading-relaxed">
-                      ▶ {point}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              この種目・目的のメニューはまだ登録されていません。
-            </p>
-          )}
-        </div>
+        {menuSessions.length > 0 ? (
+          <MenuPointSelector
+            sessions={menuSessions}
+            selectedId={selectedSession?.id ?? ""}
+            expandedId={expandedSessionId}
+            onSelect={handleMenuSelect}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            この種目・目的のメニューはまだ登録されていません。
+          </p>
+        )}
       </PracticeMenuPane>
 
       <PracticeMenuPane title="動画">
